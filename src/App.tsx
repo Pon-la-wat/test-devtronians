@@ -1,9 +1,8 @@
-/** The starter's only screen: the real ones arrive with the Work Items. */
+/** The single page: the brand name, centred, and nothing else. */
 export function App() {
   return (
-    <main>
-      <h1>App</h1>
-      <p>Nothing here yet.</p>
+    <main className="stage">
+      <h1 className="brand">Devtronians</h1>
     </main>
   );
 }

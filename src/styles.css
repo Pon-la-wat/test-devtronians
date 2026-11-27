@@ -1,0 +1,44 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #0b0d14;
+  color: #f4f6ff;
+}
+
+.stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #151a2b 0%, #0b0d14 70%);
+}
+
+.brand {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 300;
+  font-size: clamp(3rem, 9vw, 8rem);
+  letter-spacing: 0.12em;
+  color: #f4f6ff;
+  text-shadow: 0 0 24px rgba(140, 170, 255, 0.35);
+  animation: drift 6s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(-6px);
+    text-shadow: 0 0 18px rgba(140, 170, 255, 0.25);
+  }
+  50% {
+    transform: translateY(6px);
+    text-shadow: 0 0 36px rgba(140, 170, 255, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand {
+    animation: none;
+  }
+}
