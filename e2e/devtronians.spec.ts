@@ -49,6 +49,47 @@ test("[EX-1] by keyboard, a visitor opens About from the home page and reads the
   ).toBeVisible();
 });
 
+test("[EX-1] the home page loads within seconds, is dark, centred and gently moving", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+  const brand = page.getByRole("heading", { level: 1, name: "Devtronians" });
+  await expect(brand).toBeVisible({ timeout: 3000 });
+
+  const look = await page.evaluate(() => {
+    const h1 = document.querySelector("h1.brand") as HTMLElement;
+    const stage = document.querySelector(".stage") as HTMLElement;
+    return {
+      bodyBackground: getComputedStyle(document.body).backgroundColor,
+      stageBackground: getComputedStyle(stage).backgroundImage,
+      animation: getComputedStyle(h1).animationName,
+    };
+  });
+  expect(look.bodyBackground).toBe("rgb(11, 13, 20)");
+  expect(look.stageBackground).toContain("radial-gradient");
+  expect(look.animation).toBe("drift");
+
+  const box = await brand.boundingBox();
+  expect(box).not.toBeNull();
+  const centreX = box!.x + box!.width / 2;
+  const centreY = box!.y + box!.height / 2;
+  // The text drifts up and down by 6 px, so allow a little vertical slack.
+  expect(Math.abs(centreX - 640)).toBeLessThanOrEqual(2);
+  expect(Math.abs(centreY - 360)).toBeLessThanOrEqual(10);
+});
+
+test("[EX-1] the home page stops moving when the visitor prefers reduced motion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const animation = await page
+    .getByRole("heading", { level: 1, name: "Devtronians" })
+    .evaluate((el) => getComputedStyle(el).animationName);
+  expect(animation).toBe("none");
+});
+
 test("[EX-1] the About page opens directly by its address and fits a 320 px screen", async ({
   page,
 }) => {

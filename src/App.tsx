@@ -12,7 +12,9 @@ export function App({ path }: { path?: string }) {
   return (
     <main className="stage">
       <nav className="topnav" aria-label="เมนูหลัก">
-        <a href={ABOUT_PATH}>เกี่ยวกับเรา</a>
+        <a href={ABOUT_PATH} lang="th">
+          เกี่ยวกับเรา
+        </a>
       </nav>
       <h1 className="brand">Devtronians</h1>
     </main>

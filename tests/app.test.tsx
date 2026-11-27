@@ -35,6 +35,23 @@ describe("About page", () => {
     ).toBe("/");
   });
 
+  it("[EX-1] marks the document as Thai on the About page and restores the language when leaving", () => {
+    document.documentElement.lang = "en";
+    const { unmount } = render(<App path="/about" />);
+    expect(document.documentElement.lang).toBe("th");
+    unmount();
+    expect(document.documentElement.lang).toBe("en");
+  });
+
+  it("[EX-1] the home page keeps the document language and marks only the Thai link as Thai", () => {
+    document.documentElement.lang = "en";
+    render(<App path="/" />);
+    expect(document.documentElement.lang).toBe("en");
+    expect(
+      screen.getByRole("link", { name: "เกี่ยวกับเรา" }).getAttribute("lang"),
+    ).toBe("th");
+  });
+
   it("opens the same page with a trailing slash", () => {
     render(<App path="/about/" />);
     expect(

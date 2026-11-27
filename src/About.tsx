@@ -4,10 +4,14 @@ import { story } from "./content/story";
 /** The About page: open to everyone, no sign-in. */
 export function About() {
   useEffect(() => {
-    const previous = document.title;
+    const previousTitle = document.title;
+    const previousLang = document.documentElement.lang;
     document.title = `${story.title} | Devtronians`;
+    // The About page is Thai; the home page (Latin brand name) is not.
+    document.documentElement.lang = "th";
     return () => {
-      document.title = previous;
+      document.title = previousTitle;
+      document.documentElement.lang = previousLang;
     };
   }, []);
 
