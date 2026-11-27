@@ -1,49 +1,65 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
-test("[EX-1] dark page with Devtronians centred and gently moving", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const h1 = page.getByRole("heading", { name: "Devtronians" });
-  await expect(h1).toBeVisible();
-  const box = await h1.boundingBox();
-  const vp = page.viewportSize();
-  expect(box && vp).toBeTruthy();
-  if (box && vp) {
-    expect(Math.abs(box.x + box.width / 2 - vp.width / 2)).toBeLessThan(10);
-    expect(Math.abs(box.y + box.height / 2 - vp.height / 2)).toBeLessThan(20);
-  }
-  const bg = await page.evaluate(
-    () => getComputedStyle(document.body).backgroundColor,
-  );
-  expect(bg).toBe("rgb(11, 13, 20)");
-  const anim = await h1.evaluate((el) => getComputedStyle(el).animationName);
-  expect(anim).toBe("drift");
-});
+type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
 
-test("[EX-2] only the word, nothing focusable, no login", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("body")).toHaveText("Devtronians");
-  await page.keyboard.press("Tab");
-  const tag = await page.evaluate(() => document.activeElement?.tagName);
-  expect(tag).toBe("BODY");
-  await expect(page.locator("a, button, input, nav, form")).toHaveCount(0);
-  // `as never`: axe bundles its own copy of the Playwright Page type.
-  const results = await new AxeBuilder({ page: page as never }).analyze();
+async function expectNoSeriousViolations(page: Page) {
+  // axe resolves its own copy of the Playwright types, so the two `Page`
+  // types differ in this install; it is the same object at run time.
+  const results = await new AxeBuilder({
+    page: page as unknown as AxePage,
+  }).analyze();
   const bad = results.violations.filter(
     (v) => v.impact === "serious" || v.impact === "critical",
   );
   expect(bad).toEqual([]);
+}
+
+test("[EX-1] by keyboard, a visitor opens About from the home page and reads the sample story without signing in", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Devtronians" }),
+  ).toBeVisible();
+  await expectNoSeriousViolations(page);
+
+  await page.keyboard.press("Tab");
+  const link = page.getByRole("link", { name: "เกี่ยวกับเรา", exact: true });
+  await expect(link).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "เรื่องราวของธุรกิจ" }),
+  ).toBeVisible();
+  await expect(page.getByText(/^ข้อความตัวอย่าง/)).toBeVisible();
+  await expect(page.getByText(/ธุรกิจของเราเริ่มต้นจากความตั้งใจ/)).toBeVisible();
+  await expect(page.locator("input, button, form")).toHaveCount(0);
+  await expectNoSeriousViolations(page);
+
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("link", { name: "กลับหน้าแรก", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Devtronians" }),
+  ).toBeVisible();
 });
 
-test("[EX-3] shows within seconds and is legible", async ({ page }) => {
-  const start = Date.now();
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Devtronians" })).toBeVisible();
-  expect(Date.now() - start).toBeLessThan(3000);
-  const results = await new AxeBuilder({ page: page as never })
-    .withRules(["color-contrast"])
-    .analyze();
-  expect(results.violations).toEqual([]);
+test("[EX-1] the About page opens directly by its address and fits a 320 px screen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/about");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "เรื่องราวของธุรกิจ" }),
+  ).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await expectNoSeriousViolations(page);
 });
