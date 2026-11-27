@@ -1,38 +1,61 @@
-import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "../src/App";
+import { story } from "../src/content/story";
 
 afterEach(cleanup);
 
-const css = readFileSync("src/styles.css", "utf8");
-
-describe("Devtronians page", () => {
-  it("[EX-1] shows Devtronians centred on a dark background with gentle motion", () => {
-    render(<App />);
+describe("Home page", () => {
+  it("shows the brand name and a link to the About page", () => {
+    render(<App path="/" />);
     expect(
       screen.getByRole("heading", { level: 1, name: "Devtronians" }),
     ).toBeTruthy();
-    expect(css).toMatch(/background:[^;]*#0b0d14/);
-    expect(css).toMatch(/color:\s*#f4f6ff/);
-    expect(css).toMatch(/justify-content:\s*center/);
-    expect(css).toMatch(/align-items:\s*center/);
-    expect(css).toMatch(/animation:\s*drift/);
+    const link = screen.getByRole("link", { name: "เกี่ยวกับเรา" });
+    expect(link.getAttribute("href")).toBe("/about");
   });
+});
 
-  it("[EX-2] shows no menu, button, link, input or other text", () => {
-    const { container } = render(<App />);
-    expect(container.textContent).toBe("Devtronians");
+describe("About page", () => {
+  it("[EX-1] shows the business story heading with labelled Thai sample text, no sign-in", () => {
+    render(<App path="/about" />);
     expect(
-      container.querySelectorAll("a, button, input, nav, img, form"),
-    ).toHaveLength(0);
+      screen.getByRole("heading", { level: 2, name: "เรื่องราวของธุรกิจ" }),
+    ).toBeTruthy();
+    expect(screen.getByText(/^ข้อความตัวอย่าง/)).toBeTruthy();
+    expect(story.paragraphs.length).toBeGreaterThan(0);
+    for (const paragraph of story.paragraphs) {
+      expect(screen.getByText(paragraph)).toBeTruthy();
+    }
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByLabelText(/รหัสผ่าน|password/i)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "กลับหน้าแรก" }).getAttribute("href"),
+    ).toBe("/");
   });
 
-  it("[EX-3] renders at once with no async work and keeps the word legible", () => {
-    render(<App />);
-    expect(screen.getByText("Devtronians")).toBeTruthy();
-    // light text (#f4f6ff) on near-black (#0b0d14); reduced motion is respected
-    expect(css).toMatch(/prefers-reduced-motion/);
-    expect(css).not.toMatch(/opacity/);
+  it("[EX-1] marks the document as Thai on the About page and restores the language when leaving", () => {
+    document.documentElement.lang = "en";
+    const { unmount } = render(<App path="/about" />);
+    expect(document.documentElement.lang).toBe("th");
+    unmount();
+    expect(document.documentElement.lang).toBe("en");
+  });
+
+  it("[EX-1] the home page keeps the document language and marks only the Thai link as Thai", () => {
+    document.documentElement.lang = "en";
+    render(<App path="/" />);
+    expect(document.documentElement.lang).toBe("en");
+    expect(
+      screen.getByRole("link", { name: "เกี่ยวกับเรา" }).getAttribute("lang"),
+    ).toBe("th");
+  });
+
+  it("opens the same page with a trailing slash", () => {
+    render(<App path="/about/" />);
+    expect(
+      screen.getByRole("heading", { name: "เรื่องราวของธุรกิจ" }),
+    ).toBeTruthy();
   });
 });
